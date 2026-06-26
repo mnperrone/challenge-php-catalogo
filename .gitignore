@@ -13,3 +13,6 @@
 # OS
 .DS_Store
 Thumbs.db
+
+# Testing Cache
+/backend/.phpunit.cache/
