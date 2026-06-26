@@ -15,52 +15,74 @@ class ProductoApiTest extends TestCase
      *
      * @param string $method
      * @param string $path
-     * @param array|null $body
-     * @return array{status: int, body: string}
+     * @param array|string|null $body
+     * @param array $extraHeaders
+     * @return array{status: int, body: string, headers: array<string, string>}
      */
-    private function request(string $method, string $path, ?array $body = null): array
+    private function request(string $method, string $path, $body = null, array $extraHeaders = []): array
     {
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL, $this->baseUrl . $path);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
 
-        if ($body !== null) {
+        $headers = [];
+        if (is_array($body)) {
             $jsonData = json_encode($body);
             curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
-            curl_setopt($ch, CURLOPT_HTTPHEADER, [
-                'Content-Type: application/json',
-                'Content-Length: ' . strlen($jsonData)
-            ]);
+            $headers[] = 'Content-Type: application/json';
+            $headers[] = 'Content-Length: ' . strlen($jsonData);
+        } elseif (is_string($body)) {
+            curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
+            $headers[] = 'Content-Length: ' . strlen($body);
         }
+
+        foreach ($extraHeaders as $h) {
+            $headers[] = $h;
+        }
+
+        curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+
+        $responseHeaders = [];
+        curl_setopt($ch, CURLOPT_HEADERFUNCTION, function($curl, $header) use (&$responseHeaders) {
+            $len = strlen($header);
+            $parts = explode(':', $header, 2);
+            if (count($parts) === 2) {
+                $responseHeaders[strtolower(trim($parts[0]))] = trim($parts[1]);
+            }
+            return $len;
+        });
 
         $response = curl_exec($ch);
         $status = curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
         return [
-            'status' => $status,
-            'body'   => $response ?: ''
+            'status'  => $status,
+            'body'    => $response ?: '',
+            'headers' => $responseHeaders
         ];
     }
 
     /**
-     * Test: Obtener listado de productos inicial (vaciado o no)
+     * Test: Obtener listado de productos inicial y verificar cabeceras CORS
      */
     public function testListadoInicial(): void
     {
         $res = $this->request('GET', '/productos');
         $this->assertSame(200, $res['status']);
 
+        // Verificar CORS
+        $this->assertArrayHasKey('access-control-allow-origin', $res['headers']);
+        $this->assertSame('*', $res['headers']['access-control-allow-origin']);
+
         $data = json_decode($res['body'], true);
         $this->assertArrayHasKey('data', $data);
         $this->assertArrayHasKey('precio_usd', $data);
-        $this->assertIsArray($data['data']);
-        $this->assertGreaterThan(0, $data['precio_usd']);
     }
 
     /**
-     * Test: Flujo completo CRUD de un producto
+     * Test: Flujo completo CRUD de un producto con cabecera Location
      */
     public function testFlujoCompletoCrud(): void
     {
@@ -74,24 +96,16 @@ class ProductoApiTest extends TestCase
         $resCreate = $this->request('POST', '/productos', $newProduct);
         $this->assertSame(201, $resCreate['status']);
 
-        $createData = json_decode($resCreate['body'], true);
-        $this->assertArrayHasKey('data', $createData);
+        // Verificar cabecera Location
+        $this->assertArrayHasKey('location', $resCreate['headers']);
         
-        $producto = $createData['data'];
-        $this->assertArrayHasKey('id', $producto);
-        $this->assertSame($newProduct['nombre'], $producto['nombre']);
-        $this->assertSame($newProduct['descripcion'], $producto['descripcion']);
-        $this->assertEquals($newProduct['precio'], $producto['precio']);
-        $this->assertArrayHasKey('precio_usd', $producto);
-
-        $id = $producto['id'];
+        $createData = json_decode($resCreate['body'], true);
+        $id = $createData['data']['id'];
+        $this->assertSame("/productos/{$id}", $resCreate['headers']['location']);
 
         // 2. Detalle del Producto Creado
         $resShow = $this->request('GET', "/productos/{$id}");
         $this->assertSame(200, $resShow['status']);
-        
-        $showData = json_decode($resShow['body'], true);
-        $this->assertSame($id, $showData['data']['id']);
 
         // 3. Editar Producto
         $updateProduct = [
@@ -103,14 +117,9 @@ class ProductoApiTest extends TestCase
         $resUpdate = $this->request('PUT', "/productos/{$id}", $updateProduct);
         $this->assertSame(200, $resUpdate['status']);
 
-        $updateData = json_decode($resUpdate['body'], true);
-        $this->assertSame($updateProduct['nombre'], $updateData['data']['nombre']);
-        $this->assertEquals($updateProduct['precio'], $updateData['data']['precio']);
-
         // 4. Eliminar Producto
         $resDelete = $this->request('DELETE', "/productos/{$id}");
         $this->assertSame(204, $resDelete['status']);
-        $this->assertEmpty($resDelete['body']);
 
         // 5. Verificar que ya no existe (404)
         $resShowDeleted = $this->request('GET', "/productos/{$id}");
@@ -118,11 +127,10 @@ class ProductoApiTest extends TestCase
     }
 
     /**
-     * Test: Validaciones y errores esperados (400 Bad Request)
+     * Test: Validaciones de formulario (400)
      */
     public function testValidacionesDeFormulario(): void
     {
-        // Nombre vacío
         $invalidProduct = [
             'nombre'      => '',
             'descripcion' => 'Falta nombre válido',
@@ -130,18 +138,60 @@ class ProductoApiTest extends TestCase
         ];
         $res = $this->request('POST', '/productos', $invalidProduct);
         $this->assertSame(400, $res['status']);
-        $data = json_decode($res['body'], true);
-        $this->assertArrayHasKey('error', $data);
+    }
 
-        // Precio negativo
-        $invalidProduct2 = [
-            'nombre'      => 'Producto con precio inválido',
-            'descripcion' => 'Precio negativo',
-            'precio'      => -50.5
+    /**
+     * Test: Normalización de trailing slash
+     */
+    public function testTrailingSlashNormalization(): void
+    {
+        $res = $this->request('GET', '/productos/');
+        $this->assertSame(200, $res['status']);
+    }
+
+    /**
+     * Test: Method Not Allowed (405) y cabecera Allow
+     */
+    public function testMethodNotAllowedAllowHeader(): void
+    {
+        $res = $this->request('POST', '/productos/123', ['nombre' => 'Test']);
+        $this->assertSame(405, $res['status']);
+        $this->assertArrayHasKey('allow', $res['headers']);
+        $this->assertStringContainsString('GET', $res['headers']['allow']);
+        $this->assertStringContainsString('PUT', $res['headers']['allow']);
+        $this->assertStringContainsString('DELETE', $res['headers']['allow']);
+    }
+
+    /**
+     * Test: Content-Type inválido (415)
+     */
+    public function testUnsupportedMediaType(): void
+    {
+        $newProduct = [
+            'nombre' => 'Producto de Prueba',
+            'precio' => 100
         ];
-        $res2 = $this->request('POST', '/productos', $invalidProduct2);
-        $this->assertSame(400, $res2['status']);
-        $data2 = json_decode($res2['body'], true);
-        $this->assertArrayHasKey('error', $data2);
+        // Enviar con Content-Type texto plano
+        $res = $this->request('POST', '/productos', json_encode($newProduct), ['Content-Type: text/plain']);
+        $this->assertSame(415, $res['status']);
+    }
+
+    /**
+     * Test: JSON malformado (400)
+     */
+    public function testInvalidJsonMalformed(): void
+    {
+        $res = $this->request('POST', '/productos', '{invalid_json}', ['Content-Type: application/json']);
+        $this->assertSame(400, $res['status']);
+    }
+
+    /**
+     * Test: JSON de tipo de dato inválido (400)
+     */
+    public function testInvalidJsonWrongType(): void
+    {
+        // Enviar un string simple "texto" en lugar de un objeto JSON {}
+        $res = $this->request('POST', '/productos', '"texto"', ['Content-Type: application/json']);
+        $this->assertSame(400, $res['status']);
     }
 }

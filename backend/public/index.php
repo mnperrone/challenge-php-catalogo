@@ -10,6 +10,16 @@ use App\Http\Response;
 use App\Models\Producto;
 use App\Controllers\ProductoController;
 
+// Configuración de cabeceras CORS globales
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization, Accept');
+
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(204);
+    exit;
+}
+
 try {
     // 1. Configuración y Conexión (Composition Root)
     $config = new AppConfig();
@@ -42,6 +52,11 @@ try {
         exit;
     }
 
+    // Normalizar barra diagonal al final (trailing slash) para evitar 404s innecesarios
+    if ($uri !== '/' && str_ends_with($uri, '/')) {
+        $uri = rtrim($uri, '/');
+    }
+
     $routeInfo = $dispatcher->dispatch($httpMethod, $uri);
 
     switch ($routeInfo[0]) {
@@ -50,6 +65,8 @@ try {
             break;
 
         case FastRoute\Dispatcher::METHOD_NOT_ALLOWED:
+            $allowedMethods = $routeInfo[1];
+            header('Allow: ' . implode(', ', $allowedMethods));
             Response::json(['error' => 'Método no permitido'], 405);
             break;
 
@@ -69,7 +86,8 @@ try {
             break;
     }
 } catch (Throwable $e) {
+    error_log($e->getMessage() . "\n" . $e->getTraceAsString());
     Response::json([
-        'error' => 'Error interno del servidor: ' . $e->getMessage()
+        'error' => 'Error interno del servidor'
     ], 500);
 }
