@@ -118,4 +118,14 @@ class Producto
 
         return $producto;
     }
+
+    /**
+     * Obtiene el valor del dólar configurado en la aplicación.
+     *
+     * @return float
+     */
+    public function getPrecioUsd(): float
+    {
+        return $this->precioUsd;
+    }
 }

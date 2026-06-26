@@ -23,7 +23,10 @@ class ProductoController
     public function index(): void
     {
         $productos = $this->modelo->findAll();
-        Response::json(['data' => $productos], 200);
+        Response::json([
+            'data' => $productos,
+            'precio_usd' => $this->modelo->getPrecioUsd()
+        ], 200);
     }
 
     /**
