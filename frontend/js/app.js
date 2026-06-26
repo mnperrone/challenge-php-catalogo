@@ -86,6 +86,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const dataResponse = await respuesta.json();
             state.productos = dataResponse.data || [];
+            if (dataResponse.precio_usd) {
+                state.tipoCambioCalculado = parseFloat(dataResponse.precio_usd);
+            }
             
             calcularTipoCambio();
             actualizarUI();
@@ -322,14 +325,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- AUXILIARES Y RENDER ---
 
     function calcularTipoCambio() {
-        // Encontrar cualquier producto para calcular la tasa (precio_ars / precio_usd)
-        if (state.productos.length > 0) {
-            const primerProducto = state.productos.find(p => p.precio > 0 && p.precio_usd > 0);
-            if (primerProducto) {
-                state.tipoCambioCalculado = primerProducto.precio / primerProducto.precio_usd;
+        // Encontrar cualquier producto para calcular la tasa de fallback únicamente si no vino del backend
+        if (!state.tipoCambioCalculado) {
+            if (state.productos.length > 0) {
+                const primerProducto = state.productos.find(p => p.precio > 0 && p.precio_usd > 0);
+                if (primerProducto) {
+                    state.tipoCambioCalculado = primerProducto.precio / primerProducto.precio_usd;
+                }
+            } else {
+                state.tipoCambioCalculado = null;
             }
-        } else {
-            state.tipoCambioCalculado = null;
         }
     }
 
