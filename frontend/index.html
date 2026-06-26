@@ -1,1 +1,178 @@
-<!-- Placeholder - será reemplazado en Etapa 3 -->
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Catálogo premium de gestión de productos con conversión dinámica a dólares estadounidenses.">
+    <title>Catálogo Pro — Gestión de Productos</title>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Capa de fondo con gradiente dinámico -->
+    <div class="bg-gradient"></div>
+
+    <div class="container">
+        <!-- Encabezado de la Aplicación -->
+        <header class="app-header">
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+                </div>
+                <div class="logo-text">
+                    <h1>Catálogo<span>Pro</span></h1>
+                    <p>Gestión inteligente de productos</p>
+                </div>
+            </div>
+
+            <!-- Panel de Estadísticas Rápidas -->
+            <div class="stats-panel">
+                <div class="stat-card" id="stat-total-products">
+                    <div class="stat-info">
+                        <span class="stat-label">Total Productos</span>
+                        <span class="stat-value" id="stats-count">0</span>
+                    </div>
+                    <div class="stat-icon bg-blue">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+                    </div>
+                </div>
+                <div class="stat-card" id="stat-usd-rate">
+                    <div class="stat-info">
+                        <span class="stat-label">Tipo de Cambio</span>
+                        <span class="stat-value" id="stats-exchange">calculando...</span>
+                    </div>
+                    <div class="stat-icon bg-green">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Contenedor Principal -->
+        <main class="main-layout">
+            <!-- Sección Formulario -->
+            <section class="form-section glass-card">
+                <div class="card-header">
+                    <h2 id="form-title">Agregar Producto</h2>
+                    <p id="form-subtitle">Completa los campos para añadir un nuevo producto al catálogo.</p>
+                </div>
+
+                <form id="product-form" novalidate>
+                    <input type="hidden" id="product-id">
+
+                    <div class="form-group">
+                        <label for="product-nombre">Nombre del Producto</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="product-nombre" placeholder="Ej. Monitor Gamer 27 pulgadas" required>
+                            <span class="input-border"></span>
+                        </div>
+                        <span class="error-message" id="error-nombre"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="product-descripcion">Descripción</label>
+                        <div class="input-wrapper">
+                            <textarea id="product-descripcion" placeholder="Ej. Panel IPS, resolución 1440p, refresco 144Hz..." rows="4"></textarea>
+                            <span class="input-border"></span>
+                        </div>
+                        <span class="error-message" id="error-descripcion"></span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="product-precio">Precio (ARS)</label>
+                        <div class="input-wrapper input-with-prefix">
+                            <span class="input-prefix">$</span>
+                            <input type="number" id="product-precio" placeholder="0.00" step="0.01" min="0" required>
+                            <span class="input-border"></span>
+                        </div>
+                        <span class="error-message" id="error-precio"></span>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" id="form-cancel-btn" class="btn btn-secondary hidden">
+                            Cancelar
+                        </button>
+                        <button type="submit" id="form-submit-btn" class="btn btn-primary">
+                            <span>Guardar Producto</span>
+                            <svg class="btn-spinner hidden" viewBox="0 0 50 50">
+                                <circle class="path" cx="25" cy="25" r="20" fill="none" stroke-width="5"></circle>
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- Sección Catálogo / Tabla -->
+            <section class="catalog-section glass-card">
+                <div class="card-header space-between">
+                    <div>
+                        <h2>Listado de Productos</h2>
+                        <p>Visualización y administración de los ítems en existencia.</p>
+                    </div>
+                    <!-- Buscador en tiempo real -->
+                    <div class="search-box">
+                        <div class="search-input-wrapper">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="search-icon"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            <input type="text" id="search-input" placeholder="Buscar productos...">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="products-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 25%">Nombre</th>
+                                <th style="width: 35%">Descripción</th>
+                                <th style="width: 15%" class="text-right">Precio (ARS)</th>
+                                <th style="width: 15%" class="text-right">Precio (USD)</th>
+                                <th style="width: 10%" class="text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="products-tbody">
+                            <!-- Los productos se inyectarán de forma dinámica desde JS -->
+                            <tr>
+                                <td colspan="5" class="text-center table-loader-cell">
+                                    <div class="loader-wrapper">
+                                        <div class="spinner"></div>
+                                        <p>Cargando productos...</p>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Sistema de Notificaciones Toasts -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- Modal de Confirmación de Eliminación -->
+    <div id="confirm-modal" class="modal-overlay hidden">
+        <div class="modal-content glass-card">
+            <div class="modal-header">
+                <div class="modal-warning-icon">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                </div>
+                <h2>¿Eliminar Producto?</h2>
+            </div>
+            <div class="modal-body">
+                <p>¿Estás seguro de que deseas eliminar <strong id="modal-product-name">este producto</strong> del catálogo? Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-cancel-btn" class="btn btn-secondary">Cancelar</button>
+                <button id="modal-confirm-btn" class="btn btn-danger">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Javascript -->
+    <script src="js/app.js"></script>
+</body>
+</html>
