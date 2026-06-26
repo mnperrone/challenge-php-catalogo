@@ -128,6 +128,13 @@ class ProductoController
             Response::json(['error' => 'El cuerpo de la solicitud no puede estar vacío.'], 400);
         }
 
+        // Sanitización contra inyección de null-bytes
+        foreach ($input as $key => $value) {
+            if (is_string($value)) {
+                $input[$key] = str_replace("\0", '', $value);
+            }
+        }
+
         $errors = [];
 
         // Validar nombre

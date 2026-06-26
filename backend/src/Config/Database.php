@@ -32,10 +32,20 @@ class Database
                 PDO::ATTR_EMULATE_PREPARES   => false,
             ];
 
-            try {
-                self::$instance = new PDO($dsn, $user, $password, $options);
-            } catch (PDOException $e) {
-                throw new RuntimeException('Error al conectar con la base de datos: ' . $e->getMessage(), 500, $e);
+            $maxAttempts = 5;
+            $attempt = 0;
+
+            while (true) {
+                try {
+                    self::$instance = new PDO($dsn, $user, $password, $options);
+                    break;
+                } catch (PDOException $e) {
+                    $attempt++;
+                    if ($attempt >= $maxAttempts) {
+                        throw new RuntimeException('Error al conectar con la base de datos tras ' . $maxAttempts . ' intentos: ' . $e->getMessage(), 500, $e);
+                    }
+                    sleep(1);
+                }
             }
         }
 

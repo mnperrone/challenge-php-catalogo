@@ -36,6 +36,12 @@ try {
     }
     $uri = rawurldecode($uri);
 
+    // Redirigir la raíz al frontend
+    if ($uri === '/') {
+        header('Location: /frontend/');
+        exit;
+    }
+
     $routeInfo = $dispatcher->dispatch($httpMethod, $uri);
 
     switch ($routeInfo[0]) {
