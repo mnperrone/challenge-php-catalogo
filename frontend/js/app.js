@@ -161,7 +161,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // DELETE /productos/{id} - Eliminar producto
     async function eliminarProducto(id) {
-        console.log('Ejecutando fetch DELETE para producto ID:', id);
         try {
             const respuesta = await fetch(`${API_URL}/${id}`, {
                 method: 'DELETE'

@@ -59,6 +59,7 @@ class ProductoController
             Response::json(['error' => 'No se pudo crear el producto'], 500);
         }
 
+        header("Location: /productos/{$producto['id']}");
         Response::json(['data' => $producto], 201);
     }
 
@@ -106,14 +107,27 @@ class ProductoController
      */
     private function parseJsonInput(): ?array
     {
+        $method = $_SERVER['REQUEST_METHOD'] ?? '';
+        if (in_array($method, ['POST', 'PUT'])) {
+            $contentType = $_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '';
+            $contentTypeBase = trim(strtolower(explode(';', $contentType)[0]));
+            if ($contentTypeBase !== 'application/json') {
+                Response::json(['error' => 'El tipo de contenido debe ser application/json'], 415);
+            }
+        }
+
         $body = file_get_contents('php://input');
-        if ($body === '') {
+        if (trim($body) === '') {
             return null;
         }
 
         $data = json_decode($body, true);
-        if ($data === null && json_last_error() !== JSON_ERROR_NONE) {
+        if (json_last_error() !== JSON_ERROR_NONE) {
             Response::json(['error' => 'Formato JSON inválido'], 400);
+        }
+
+        if ($data !== null && !is_array($data)) {
+            Response::json(['error' => 'El cuerpo de la solicitud debe ser un objeto JSON.'], 400);
         }
 
         return $data;
