@@ -16,3 +16,4 @@ Thumbs.db
 
 # Testing Cache
 /backend/.phpunit.cache/
+/backend/.phpunit.cache/test-results
