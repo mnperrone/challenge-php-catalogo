@@ -61,3 +61,21 @@ Para ejecutar la suite de pruebas de integración automatizadas (PHPUnit):
 ```bash
 docker compose exec php ./vendor/bin/phpunit
 ```
+## Capturas
+- Index:
+<img width="1734" height="920" alt="image" src="https://github.com/user-attachments/assets/bb98cff4-7270-41cc-8260-23bff3e56daf" />
+
+- Alta de producto:
+<img width="1736" height="913" alt="image" src="https://github.com/user-attachments/assets/84a93504-4465-4888-b816-58a144cf98fc" />
+
+- Edición:
+<img width="1797" height="929" alt="image" src="https://github.com/user-attachments/assets/29f80c4a-5530-4c14-bc97-fd51fd05e30c" />
+
+- Eliminar producto:
+<img width="1735" height="876" alt="image" src="https://github.com/user-attachments/assets/8fff7ba8-9167-47cb-8b1a-e7216695903a" />
+
+<img width="1772" height="912" alt="image" src="https://github.com/user-attachments/assets/db7519ec-33fb-4a15-9310-7e497288a703" />
+
+
+
+
