@@ -1,0 +1,1 @@
+{"version":2,"defects":[],"times":{"App\\Tests\\ProductoApiTest::testListadoInicial":0.013,"App\\Tests\\ProductoApiTest::testFlujoCompletoCrud":0.021,"App\\Tests\\ProductoApiTest::testValidacionesDeFormulario":0.003}}
